@@ -57,46 +57,41 @@ The user composes messages character-by-character using 7-bit DIP switches, stor
 ### State Machine
 
 ```
-                        MOD (PA0)
-              ┌──────────────────────┐
-              v                      |
-          +--------+            +-----------+
-  ------->|  IDLE  |---MOD----->| COMPOSING |<---+
-          +--------+   (PA0)   +-----------+    |
-              ^                  |    |    |     |
-              |            SAVE (PA1) | DELETE   |
-              |                  |    | (PA2)    |
-              |                  +----+---------+
-              |                  |
-              |           TRANSMIT (PD7)
-              |           & SOS not active
-              |                  |
-              |                  v
-              |          +--------------+
-              +----------| TRANSMITTING |
-            auto-return  +--------------+
-           (TX complete)
+           +----------------- MOD (PA0) [Cancel] ----------------+
+           |                                                     |
+           v                                                     |
+  +----------------+                                     +----------------+ <-- SAVE (PA1) [append]
+  |      IDLE      | ----------- MOD (PA0) ------------> |   COMPOSING    |
+  +----------------+                                     +----------------+ <-- DELETE (PA2) [pop]
+           ^                                                     |
+           |                                               TRANSMIT (PD7)
+           |                                               (SOS inactive)
+           |                                                     |
+           |                                                     v
+           |                                             +----------------+
+           +------------- Auto-return (TX Done) ---------|  TRANSMITTING  |
+                                                         +----------------+
 ```
 
 ### Data Flow
 
 ```
-+-------------------------------------------------------------+
-|                        MAIN LOOP                            |
-|                                                             |
-|  DIP Switches --> buffer_tx[] --> trimite_caracter() --> LEDs (TX)  |
-|   (PORTD 0:6)      (SAVE/DEL)     pulse_morse()      PB0, PB1    |
-+-------------------------------------------------------------+
-                           || concurrent
-+-------------------------------------------------------------+
-|                   TIMER0 ISR (~20 ms)                       |
-|                                                             |
-|  PORTC (0:1) --> contor_20ms --> decodeaza_morse() --> buffer_rx[]  |
-|  (external in)   pulse classify   dot/dash -> ASCII   (circular)   |
-|                                        |                           |
-|                                   SOS detector                     |
-|                                   (sequential S->O->S match)       |
-+-------------------------------------------------------------+
++-----------------------------------------------------------------------+
+|                               MAIN LOOP                               |
+|                                                                       |
+|  DIP Switches --> buffer_tx[] --> trimite_caracter() --> LEDs (TX)    |
+|   (PORTD 0:6)      (SAVE/DEL)         pulse_morse()       (PB0, PB1)  |
++-----------------------------------------------------------------------+
+                            || concurrent ||                             
++-----------------------------------------------------------------------+
+|                          TIMER0 ISR (~20 ms)                          |
+|                                                                       |
+|  PORTC (0:1) --> contor_20ms --> decodeaza_morse() --> buffer_rx[]    |
+| (external in)  pulse classify   dot/dash -> ASCII      (circular)     |
+|                                         |                             |
+|                                    SOS detector                       |
+|                             (sequential S->O->S match)                |
++-----------------------------------------------------------------------+
 ```
 
 ---
