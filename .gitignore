@@ -1,0 +1,13 @@
+*.obj
+*.hex
+*.cof
+*.dbg
+*.i
+*.asm
+*.lst
+*.map
+*.rom
+*.txt
+~$*
+Thumbs.db
+.DS_Store
